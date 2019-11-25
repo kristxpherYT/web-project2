@@ -1,0 +1,26 @@
+<!-- Create Channel Modal -->
+<div class="modal fade" id="create-channel-modal" tabindex="-1" role="dialog" aria-labelledby="createChannelModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createChannelModalLabel">Create New Channel</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ url_for('create_channel') }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="channel_name" class="col-form-label">Channel Name:</label>
+                        <input type="text" class="form-control" id="channel_name" name="channel_name">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button id="create-channel-btn" type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

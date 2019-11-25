@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/app.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/bootstrap.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/fontawesome.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/solid.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/regular.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/brands.min.css") }}">
+    <script src="{{ url_for("static", filename="js/jquery-3.4.1.min.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/bootstrap.min.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/socket.io.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/modal.js") }}"></script>
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $(function () { 
+            let duration = 6000;
+            setTimeout(function () { $('.alert').alert('close'); }, duration);
+        });
+    });
+</script>
+</html>

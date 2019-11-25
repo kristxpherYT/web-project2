@@ -1,0 +1,19 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+    <section role="main" class="h-100 col-md-12 d-flex justify-content-center align-items-center">
+        <div class="col-md-8">
+            <form action="{{ url_for('index') }}" class="w-100 justify-content-center form-inline" method="POST">
+                <div class="form-group mr-3">
+                    <label for="name">Display Name:</label>
+                </div>
+                <div class="form-group col-md-4 mr-3">
+                    <input type="text" id="name" name="name" class="form-control w-100">
+                </div>
+                <button type="submit" class="btn btn-primary text-right">Enter Chat</button>
+            </form>
+        </div>
+    </section>
+{% endblock %}

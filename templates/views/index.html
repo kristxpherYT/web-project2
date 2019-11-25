@@ -1,0 +1,289 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Project 2{% endblock %}
+
+{% block content %}
+<div class="wrapper">
+    <!-- Sidebar  -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h3>Yachay Tech Chat</h3>
+            <strong>YT</strong>
+        </div>
+
+        <ul class="list-unstyled components">
+            <li>
+                <a class="submenu-header">
+                    <span><i class="fas fa-tv"></i>Channels</span>
+                    <i id="show-create-channel-btn" class="fas fa-plus" data-toggle="modal" data-target="#create-channel-modal"></i>
+                    <div class="sidebar-divider"></div>
+                </a>
+                <ul class="list-unstyled" id="channelsSubmenu">
+                    {% if channels %}
+                        {% for channel in channels %}
+                        <li id="channel-{{ channel.channel_id }}">
+                            <a href="{{ url_for('index') }}" class="channel-item">
+                                <i class="fas fa-chevron-right"></i>{{ channel.channel_name }}</a>
+                        </li>
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+            </li>
+            <li>
+                <a class="submenu-header">
+                    <span class="d-flex align-items-center justify-content-center flex-wrap"><i class="fas fa-users"></i>Online Users <span id="users-counter">({{ logged_users | length }}/{{ users | length }})</span></span>
+                    <div class="sidebar-divider"></div>
+                </a>
+                <ul class="list-unstyled" id="usersSubmenu">
+                    <li id="user-{{ current_user.user_id }}">
+                        <a href="#" class="user-item">
+                            <i class="fas fa-user" style="position: relative;">
+                                <span class="online_icon_2"></span>
+                            </i>
+                            {{ current_user.user_name }}
+                        </a>
+                    </li>
+                    {% if logged_users %}
+                        {% for logged_user in logged_users %}
+                            {% if logged_user.user_id != current_user.user_id %}
+                            <li id="user-{{ logged_user.user_id }}">
+                                <a href="#" class="user-item">
+                                    <i class="fas fa-user" style="position: relative;">
+                                        <span class="online_icon_2"></span>
+                                    </i>
+                                    {{ logged_user.user_name }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+            </li>
+        </ul>
+
+        <ul class="list-unstyled last-component">
+            <li>
+                <a href="{{ url_for('exit') }}">
+                    <i class="fas fa-door-open"></i>
+                    Exit
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="content-container">
+        <nav id="myNavbar" class="navbar navbar-dark navbar-expand bg-dark justify-content-between">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary">
+                    <i class="fas fa-align-left"></i>
+                    <span>Menu</span>
+                </button>
+                <span class="navbar-brand">Hi, {{ current_user.user_name }}!</span>
+            </div>
+        </nav>
+    
+        <!-- Page Content  -->
+        <div id="content">
+            {% include "includes/card_chat.html" %}
+            {% include "includes/private_chat.html" %}
+            {% include "includes/join_room.html" %}
+        </div>
+    </div>
+</div>
+
+{% include "forms/create_channel_form.html" %}
+
+{% if error %}
+<div class="col-md-5 ml-3 alert alert-danger alert-dismissable fade show" role="alert">
+    {{ error | safe }}
+</div>
+{% endif %}
+<script>
+$(document).ready(() => {
+    // Connect to websocket
+    let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+    
+    let user_id = {{ current_user.user_id }};
+    let lastChannelId = {{ current_user.last_channel_id }};
+    let channelName = $("#channel-" + lastChannelId + " > a").text().trim();
+    let countMessages = {{ get_channel_messages(current_user.last_channel_id) | length }};
+    let userDestinationId;
+
+    // When connected, configure buttons
+    socket.on('connect', () => {
+        socket.emit('login', {"user_id": user_id});
+    });
+
+    // Each button should emit a "submit message" event
+    $('#send-button').on('click', () => {
+        const message = $('#message-box').val();
+        if ($("#channel-0").hasClass('active')) {
+            socket.emit('send message', {"user_id": user_id, 'message': message});
+        } else {
+            socket.emit('send channel message', {"user_id": user_id, 'message': message, "channel_name": channelName});
+        }
+    });
+
+    $('#send-private-button').on('click', () => {
+        const message = $('#private-message-box').val();
+        socket.emit('send channel message', {"user_id": user_id, 'message': message, "user_destination_id": userDestinationId});
+    });
+
+    // When a user log in, add to connected users
+    socket.on('user logged', data => {
+        let found = $("#user-" + data.logged_user.user_id).length > 0;
+        
+        if (!found) {
+            const li = $(document.createElement('li'));
+            const a = $(document.createElement('a'));
+            const i = $(document.createElement('i'));
+            const span = $(document.createElement('span'));
+
+            li.attr('id', "user-" + data.logged_user.user_id);
+            i.addClass('fas fa-user');
+            i.css('position', 'relative');
+            span.addClass('online_icon_2');
+            i.append(span);
+            a.append(i, data.logged_user.user_name);
+            a.attr("href", "#");
+            a.addClass("user-item");
+            li.append(a);
+
+            $("#usersSubmenu").append(li);
+        }
+    });
+
+    let privateMessagesCount = 0;
+    // When a new message is received, add to the chat
+    socket.on('receive message', data => {
+        const containerDiv = $(document.createElement('div'));
+        const imageDiv = $(document.createElement('div'));
+        const image = $(document.createElement('img'));
+        const msgDiv = $(document.createElement('div'));
+        const span = $(document.createElement('span'));
+
+        containerDiv.addClass('d-flex mb-4');
+        imageDiv.addClass('img_cont_msg');
+        image.addClass('rounded-circle user_img_msg');
+        span.text('8:03 PM, Today');
+        msgDiv.text(data.message);
+
+        if (data.user_id == user_id) {
+            containerDiv.addClass('justify-content-end');
+            image.attr('src', "{{ url_for('static', filename='images/user-man.png') }}");
+            msgDiv.addClass('msg_cotainer_send');
+            span.addClass('msg_time_send');
+        } else {
+            containerDiv.addClass('justify-content-start');
+            image.attr('src', "{{ url_for('static', filename='images/user-woman.png') }}");
+            msgDiv.addClass('msg_cotainer');
+            span.addClass('msg_time');
+        }
+        
+        imageDiv.append(image);
+        msgDiv.append(span);
+
+        if (data.user_id == user_id) {
+            containerDiv.append(msgDiv, imageDiv);
+        } else {
+            containerDiv.append(imageDiv, msgDiv);
+        }
+        
+        if (data.private) {
+            if (data.user_id != user_id) {
+                alert("You have a new message");
+            }
+            
+            let selectedUserId;
+            $(".user-item").each(function() {
+                if ($(this).parent().hasClass("active")) {
+                    selectedUserId = $(this).parent().attr("id");
+                    selectedUserId = selectedUserId[selectedUserId.length - 1];
+                }
+            });
+            alert(data.user_id + " " + selectedUserId);
+            if (data.user_id != selectedUserId) {
+                $('#private-body').append(containerDiv);
+                $('#private-message-box').val("");
+                privateMessagesCount++;
+                $("#private-channel-messages-count").text(privateMessagesCount.toString() + " Messages");
+            }
+        } else {
+            $('.card-body').append(containerDiv);
+            $('#message-box').val("");
+            countMessages++;
+            $("#card-channel-messages-count").text(countMessages.toString() + " Messages");
+        }
+    });
+
+    $("#card-channel-name").text(channelName);
+    $("#card-channel-messages-count").text(countMessages.toString() + " Messages");
+
+    $('#join-button').on("click", () => {
+        socket.emit('join channel', {"user_id": user_id, "channel_name": channelName});
+    });
+
+    socket.on("join channel", data => {
+        $("#join-room").attr("hidden", true);
+        $("#chat-card").removeAttr("hidden");
+        $("#chat-card .card-body").append("<p>" + data + "</p>");
+    });
+
+    $('#leave-button').submit(() => {
+        socket.emit('leave channel', {"user_id": user_id, "channel_name": channel_name});
+    });
+
+    $('#sidebarCollapse').on('click', () => {
+        $('#sidebar').toggleClass('active');
+        $('.content-container').toggleClass('content-collapse');
+        $('#myNavbar').toggleClass('side-collapsed');
+    });
+
+    $('.action_menu_btn').click(function(){
+        $('.action_menu').toggle();
+    });
+
+    $("#channel-" + lastChannelId).addClass("active");
+
+    $('.channel-item').on('click', function() {
+        channelName = $(this).text().trim();
+
+        $('.channel-item').each(function() {
+            $(this).parent().removeClass("active")
+        });
+
+        $(this).parent().addClass("active");
+        socket.emit("current channel", {
+            "user_id": user_id,
+            "channel_name": channelName
+        });
+    });
+
+    $('.user-item').on("click", function() {
+        $('.channel-item').each(function() {
+            $(this).parent().removeClass("active")
+        });
+
+        $('.user-item').each(function() {
+            $(this).parent().removeClass("active")
+        });
+
+        $(this).parent().addClass("active");
+
+        userDestinationId = $(this).parent().attr('id');
+        userDestinationId = userDestinationId[userDestinationId.length - 1];
+        let userName = $(this).text().trim();
+
+        socket.emit("current channel", {
+            "user_id": user_id,
+            "channel_name": "General"
+        });
+
+        $("#private-card").removeAttr("hidden");
+        $("#chat-card").attr("hidden", true);
+        $("#private-channel-name").text(userName);
+        
+    });
+});
+</script>
+{% endblock %}

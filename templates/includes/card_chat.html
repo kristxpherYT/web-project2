@@ -1,0 +1,56 @@
+<div id="chat-card" class="card" {% if not is_allowed(current_user.user_id, current_user.last_channel_id) %} hidden {% endif %}>
+    <div class="card-header msg_head">
+        <div class="d-flex bd-highlight">
+            <div class="img_cont">
+                <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img">
+                <span class="online_icon"></span>
+            </div>
+            <div class="user_info">
+                <span id="card-channel-name"></span>
+                <p id="card-channel-messages-count"></p>
+            </div>
+        </div>
+        <span class="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
+        <div class="action_menu">
+            <ul>
+                <li><i class="fas fa-user-circle"></i> Clear Chat</li>
+            </ul>
+        </div>
+    </div>
+    <div class="card-body msg_card_body">
+        {% for message in get_channel_messages(current_user.last_channel_id) %}
+        {% if message.user_id == current_user.user_id %}
+        <div class="d-flex justify-content-end mb-4">
+            <div class="msg_cotainer_send">
+                {{ message.message }}
+                <span class="msg_time_send">8:40 AM, Today</span>
+            </div>
+            <div class="img_cont_msg">
+                <img src="{{ url_for('static', filename='images/user-man.png') }}" class="rounded-circle user_img_msg">
+            </div>
+        </div>
+        {% else %}
+        <div class="d-flex justify-content-start mb-4">
+            <div class="img_cont_msg">
+                <img src="{{ url_for('static', filename='images/user-woman.png') }}" class="rounded-circle user_img_msg">
+            </div>
+            <div class="msg_cotainer">
+                {{ message.message }}
+                <span class="msg_time">8:40 AM, Today</span>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="card-footer">
+        <div class="input-group">
+            <div class="input-group-append">
+                <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+            </div>
+            <textarea id="message-box" name="message-box" class="form-control type_msg" placeholder="Type your message..."></textarea>
+            <div class="input-group-append">
+                <span id="send-button" class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></span>
+            </div>
+        </div>
+    </div>
+</div>
