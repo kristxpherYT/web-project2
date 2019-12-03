@@ -16,4 +16,13 @@
             </form>
         </div>
     </section>
+    <script type="text/javascript">
+        $(document).ready(() => {
+            let error = "{{ error }}";
+
+            if (error != "None") {
+                alert(error);
+            }
+        });
+    </script>
 {% endblock %}

@@ -13,7 +13,7 @@
         <span class="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
         <div class="action_menu">
             <ul>
-                <li><i class="fas fa-user-circle"></i> Clear Chat</li>
+                <li class="clear-chat"><i class="fas fa-ban"></i>Clear Chat</li>
             </ul>
         </div>
     </div>
@@ -22,8 +22,9 @@
         {% if message.user_id == current_user.user_id %}
         <div class="d-flex justify-content-end mb-4">
             <div class="msg_cotainer_send">
+                <span class="msg_username_send">{{ get_username_by_id(message.user_id) }}</span>
                 {{ message.message }}
-                <span class="msg_time_send">8:40 AM, Today</span>
+                <span class="msg_time_send">{{ message.timestamp }}</span>
             </div>
             <div class="img_cont_msg">
                 <img src="{{ url_for('static', filename='images/user-man.png') }}" class="rounded-circle user_img_msg">
@@ -35,8 +36,9 @@
                 <img src="{{ url_for('static', filename='images/user-woman.png') }}" class="rounded-circle user_img_msg">
             </div>
             <div class="msg_cotainer">
+                <span class="msg_username">{{ get_username_by_id(message.user_id) }}</span>
                 {{ message.message }}
-                <span class="msg_time">8:40 AM, Today</span>
+                <span class="msg_time">{{ message.timestamp }}</span>
             </div>
         </div>
         {% endif %}

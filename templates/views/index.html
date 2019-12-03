@@ -35,14 +35,6 @@
                     <div class="sidebar-divider"></div>
                 </a>
                 <ul class="list-unstyled" id="usersSubmenu">
-                    <li id="user-{{ current_user.user_id }}">
-                        <a href="#" class="user-item">
-                            <i class="fas fa-user" style="position: relative;">
-                                <span class="online_icon_2"></span>
-                            </i>
-                            {{ current_user.user_name }}
-                        </a>
-                    </li>
                     {% if logged_users %}
                         {% for logged_user in logged_users %}
                             {% if logged_user.user_id != current_user.user_id %}
@@ -161,27 +153,31 @@ $(document).ready(() => {
         const image = $(document.createElement('img'));
         const msgDiv = $(document.createElement('div'));
         const span = $(document.createElement('span'));
-
+        const nameSpan = $(document.createElement('span'));
+        
         containerDiv.addClass('d-flex mb-4');
         imageDiv.addClass('img_cont_msg');
         image.addClass('rounded-circle user_img_msg');
-        span.text('8:03 PM, Today');
+        nameSpan.text(data.username);
+        span.text(data.timestamp);
         msgDiv.text(data.message);
 
         if (data.user_id == user_id) {
             containerDiv.addClass('justify-content-end');
             image.attr('src', "{{ url_for('static', filename='images/user-man.png') }}");
             msgDiv.addClass('msg_cotainer_send');
+            nameSpan.addClass('msg_username_send');
             span.addClass('msg_time_send');
         } else {
             containerDiv.addClass('justify-content-start');
             image.attr('src', "{{ url_for('static', filename='images/user-woman.png') }}");
             msgDiv.addClass('msg_cotainer');
+            nameSpan.addClass('msg_username');
             span.addClass('msg_time');
         }
         
         imageDiv.append(image);
-        msgDiv.append(span);
+        msgDiv.append(nameSpan, span);
 
         if (data.user_id == user_id) {
             containerDiv.append(msgDiv, imageDiv);
@@ -190,10 +186,6 @@ $(document).ready(() => {
         }
         
         if (data.private) {
-            if (data.user_id != user_id) {
-                alert("You have a new message");
-            }
-            
             let selectedUserId;
             $(".user-item").each(function() {
                 if ($(this).parent().hasClass("active")) {
@@ -201,18 +193,21 @@ $(document).ready(() => {
                     selectedUserId = selectedUserId[selectedUserId.length - 1];
                 }
             });
-            alert(data.user_id + " " + selectedUserId);
-            if (data.user_id != selectedUserId) {
-                $('#private-body').append(containerDiv);
-                $('#private-message-box').val("");
-                privateMessagesCount++;
-                $("#private-channel-messages-count").text(privateMessagesCount.toString() + " Messages");
+            $('#private-body').append(containerDiv);
+            $('#private-message-box').val("");
+            privateMessagesCount++;
+            $("#private-channel-messages-count").text(privateMessagesCount.toString() + " Messages");
+
+            if (data.user_id != user_id) {
+                alert("You have a new message");
             }
         } else {
-            $('.card-body').append(containerDiv);
-            $('#message-box').val("");
-            countMessages++;
-            $("#card-channel-messages-count").text(countMessages.toString() + " Messages");
+            if ($("#channel-0").hasClass('active') || data.channel) {
+                $('#chat-card .card-body').append(containerDiv);
+                $('#message-box').val("");
+                countMessages++;
+                $("#card-channel-messages-count").text(countMessages.toString() + " Messages");
+            }
         }
     });
 
@@ -283,6 +278,11 @@ $(document).ready(() => {
         $("#chat-card").attr("hidden", true);
         $("#private-channel-name").text(userName);
         
+    });
+
+    $(".clear-chat").on("click", () => {
+        $(".card-body").empty();
+        $(".action_menu").toggle();
     });
 });
 </script>

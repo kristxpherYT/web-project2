@@ -3,6 +3,7 @@ from os.path import join, dirname
 from flask import Flask, request, render_template, session, redirect, url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 from dotenv import load_dotenv
+from datetime import datetime
 
 dotenv_path = join(dirname(__file__), '.env')  # Path to .env file
 load_dotenv(dotenv_path)
@@ -23,15 +24,25 @@ def index():
 
     if request.method == "POST":
         user_name = request.form["name"]
-        current_user = {
-            "user_id": len(users),
-            "user_sid": None,
-            "user_name": user_name,
-            "channels_allowed": [0],
-            "last_channel_id": 0
-        }
-        session["current_user"] = current_user
-        users.append(current_user)
+        exists = False
+
+        for user in users:
+            if user['user_name'] == user_name:
+                print("found")
+                exists = True
+
+        if not exists:
+            current_user = {
+                "user_id": len(users),
+                "user_sid": None,
+                "user_name": user_name,
+                "channels_allowed": [0],
+                "last_channel_id": 0
+            }
+            session["current_user"] = current_user
+            users.append(current_user)
+        else:
+            return redirect(url_for('register', error="The user already exists."))
     else:
         current_user = session.get("current_user", None)
     
@@ -44,7 +55,7 @@ def index():
 
 @app.route("/register")
 def register():
-    return render_template("views/register.html")
+    return render_template("views/register.html", error=request.args.get("error"))
 
 @app.route("/create_channel", methods=["POST"])
 def create_channel():
@@ -111,20 +122,26 @@ def login(data):
 
 @socketio.on("send message")
 def send_message(data):
+    if len(messages) == 100:
+        messages.pop(0)
+
     message = {
         "message_id": len(messages),
         "message": data['message'],
         "user_id": data['user_id'],
+        "timestamp": datetime.now().strftime("%H:%M"),
         "channel_id": 0
     }
 
     messages.append(message)
 
-    emit("receive message", {"user_id": message['user_id'], "message": message['message']}, broadcast=True)
+    emit("receive message", {"user_id": message['user_id'], "username": get_username_by_id(message["user_id"]), "message": message['message'], "timestamp": message['timestamp']}, broadcast=True)
 
 @socketio.on("send channel message")
 def send_channel_message(data):
     channel_name = None
+    if len(messages) == 100:
+        messages.pop(0)
     
     if 'channel_name' in data.keys():
         channel_name = data["channel_name"]
@@ -132,6 +149,7 @@ def send_channel_message(data):
             "message_id": len(messages),
             "message": data['message'],
             "user_id": data['user_id'],
+            "timestamp": datetime.now().strftime("%H:%M"),
             "channel_id": get_channel_id(channel_name)
         }
         
@@ -145,7 +163,7 @@ def send_channel_message(data):
         join_room(channel_name)
 
         messages.append(message)
-        emit("receive message", {"user_id": message['user_id'], "message": message['message']}, room=channel_name)
+        emit("receive message", {"user_id": message['user_id'], "username": get_username_by_id(message["user_id"]), "message": message['message'], "timestamp": message['timestamp'], "channel": True}, room=channel_name)
     else:
         user_destination_id = int(data["user_destination_id"])
 
@@ -153,7 +171,7 @@ def send_channel_message(data):
             if logged_user['user_id'] == user_destination_id:
                 channel_name = logged_user["user_sid"]
                 join_room(channel_name)
-        emit("receive message", {"user_id": data['user_id'], "message": data['message'], "private": True}, include_self=True ,room=channel_name)
+        emit("receive message", {"user_id": data['user_id'], "username": get_username_by_id(data["user_id"]),"message": data['message'], "timestamp": datetime.now().strftime("%H:%M"), "private": True}, include_self=True ,room=channel_name)
 
 @socketio.on("join channel")
 def join_channel(data):
@@ -233,6 +251,12 @@ def get_logged_user(id):
             return user
     return None
 
+def get_username_by_id(id):
+    for user in users:
+        if user['user_id'] == id:
+            return user['user_name']
+    return None
+
 def is_allowed(user_id, channel_id):
     current_user = None
     for user in users:
@@ -243,7 +267,7 @@ def is_allowed(user_id, channel_id):
         return True
     return False
 
-app.jinja_env.globals.update(get_channel_messages=get_channel_messages, get_channel_id=get_channel_id, is_allowed=is_allowed)
+app.jinja_env.globals.update(get_channel_messages=get_channel_messages, get_channel_id=get_channel_id, is_allowed=is_allowed, get_username_by_id=get_username_by_id)
 
 if __name__ == __name__:
     socketio.run(app)
